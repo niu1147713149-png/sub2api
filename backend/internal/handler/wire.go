@@ -1,0 +1,160 @@
+package handler
+
+import (
+	"github.com/Wei-Shaw/sub2api/internal/handler/admin"
+	"github.com/Wei-Shaw/sub2api/internal/service"
+
+	"github.com/google/wire"
+)
+
+// ProvideAdminHandlers creates the AdminHandlers struct
+func ProvideAdminHandlers(
+	dashboardHandler *admin.DashboardHandler,
+	userHandler *admin.UserHandler,
+	groupHandler *admin.GroupHandler,
+	accountHandler *admin.AccountHandler,
+	announcementHandler *admin.AnnouncementHandler,
+	dataManagementHandler *admin.DataManagementHandler,
+	oauthHandler *admin.OAuthHandler,
+	openaiOAuthHandler *admin.OpenAIOAuthHandler,
+	geminiOAuthHandler *admin.GeminiOAuthHandler,
+	antigravityOAuthHandler *admin.AntigravityOAuthHandler,
+	proxyHandler *admin.ProxyHandler,
+	redeemHandler *admin.RedeemHandler,
+	promoHandler *admin.PromoHandler,
+	settingHandler *admin.SettingHandler,
+	opsHandler *admin.OpsHandler,
+	systemHandler *admin.SystemHandler,
+	subscriptionHandler *admin.SubscriptionHandler,
+	usageHandler *admin.UsageHandler,
+	userAttributeHandler *admin.UserAttributeHandler,
+	errorPassthroughHandler *admin.ErrorPassthroughHandler,
+	apiKeyHandler *admin.AdminAPIKeyHandler,
+	scheduledTestHandler *admin.ScheduledTestHandler,
+	paymentOrderHandler *admin.PaymentOrderHandler,
+) *AdminHandlers {
+	return &AdminHandlers{
+		Dashboard:        dashboardHandler,
+		User:             userHandler,
+		Group:            groupHandler,
+		Account:          accountHandler,
+		Announcement:     announcementHandler,
+		DataManagement:   dataManagementHandler,
+		OAuth:            oauthHandler,
+		OpenAIOAuth:      openaiOAuthHandler,
+		GeminiOAuth:      geminiOAuthHandler,
+		AntigravityOAuth: antigravityOAuthHandler,
+		Proxy:            proxyHandler,
+		Redeem:           redeemHandler,
+		Promo:            promoHandler,
+		Setting:          settingHandler,
+		Ops:              opsHandler,
+		System:           systemHandler,
+		Subscription:     subscriptionHandler,
+		Usage:            usageHandler,
+		UserAttribute:    userAttributeHandler,
+		ErrorPassthrough: errorPassthroughHandler,
+		APIKey:           apiKeyHandler,
+		ScheduledTest:    scheduledTestHandler,
+		PaymentOrder:     paymentOrderHandler,
+	}
+}
+
+// ProvideSystemHandler creates admin.SystemHandler with version from BuildInfo
+func ProvideSystemHandler(buildInfo BuildInfo, lockService *service.SystemOperationLockService) *admin.SystemHandler {
+	return admin.NewSystemHandler(buildInfo.Version, lockService)
+}
+
+// ProvideSettingHandler creates SettingHandler with version from BuildInfo
+func ProvideSettingHandler(settingService *service.SettingService, pricingService *service.PricingService, apiKeyService *service.APIKeyService, gatewayService *service.GatewayService, buildInfo BuildInfo) *SettingHandler {
+	return NewSettingHandler(settingService, pricingService, apiKeyService, gatewayService, buildInfo.Version)
+}
+
+// ProvideHandlers creates the Handlers struct
+func ProvideHandlers(
+	authHandler *AuthHandler,
+	userHandler *UserHandler,
+	apiKeyHandler *APIKeyHandler,
+	usageHandler *UsageHandler,
+	redeemHandler *RedeemHandler,
+	subscriptionHandler *SubscriptionHandler,
+	announcementHandler *AnnouncementHandler,
+	paymentHandler *PaymentHandler,
+	adminHandlers *AdminHandlers,
+	gatewayHandler *GatewayHandler,
+	openaiGatewayHandler *OpenAIGatewayHandler,
+	soraGatewayHandler *SoraGatewayHandler,
+	soraClientHandler *SoraClientHandler,
+	settingHandler *SettingHandler,
+	totpHandler *TotpHandler,
+	referralHandler *ReferralHandler,
+	_ *service.IdempotencyCoordinator,
+	_ *service.IdempotencyCleanupService,
+) *Handlers {
+	return &Handlers{
+		Auth:          authHandler,
+		User:          userHandler,
+		APIKey:        apiKeyHandler,
+		Usage:         usageHandler,
+		Redeem:        redeemHandler,
+		Subscription:  subscriptionHandler,
+		Announcement:  announcementHandler,
+		Payment:       paymentHandler,
+		Admin:         adminHandlers,
+		Gateway:       gatewayHandler,
+		OpenAIGateway: openaiGatewayHandler,
+		SoraGateway:   soraGatewayHandler,
+		SoraClient:    soraClientHandler,
+		Setting:       settingHandler,
+		Totp:          totpHandler,
+		Referral:      referralHandler,
+	}
+}
+
+// ProviderSet is the Wire provider set for all handlers
+var ProviderSet = wire.NewSet(
+	// Top-level handlers
+	NewAuthHandler,
+	NewUserHandler,
+	NewAPIKeyHandler,
+	NewUsageHandler,
+	NewRedeemHandler,
+	NewSubscriptionHandler,
+	NewAnnouncementHandler,
+	NewPaymentHandler,
+	NewGatewayHandler,
+	NewOpenAIGatewayHandler,
+	NewSoraGatewayHandler,
+	NewTotpHandler,
+	NewReferralHandler,
+	ProvideSettingHandler,
+
+	// Admin handlers
+	admin.NewDashboardHandler,
+	admin.NewUserHandler,
+	admin.NewGroupHandler,
+	admin.NewAccountHandler,
+	admin.NewAnnouncementHandler,
+	admin.NewDataManagementHandler,
+	admin.NewOAuthHandler,
+	admin.NewOpenAIOAuthHandler,
+	admin.NewGeminiOAuthHandler,
+	admin.NewAntigravityOAuthHandler,
+	admin.NewProxyHandler,
+	admin.NewRedeemHandler,
+	admin.NewPromoHandler,
+	admin.NewSettingHandler,
+	admin.NewOpsHandler,
+	ProvideSystemHandler,
+	admin.NewSubscriptionHandler,
+	admin.NewUsageHandler,
+	admin.NewUserAttributeHandler,
+	admin.NewErrorPassthroughHandler,
+	admin.NewAdminAPIKeyHandler,
+	admin.NewScheduledTestHandler,
+	admin.NewPaymentOrderHandler,
+
+	// AdminHandlers and Handlers constructors
+	ProvideAdminHandlers,
+	ProvideHandlers,
+)
