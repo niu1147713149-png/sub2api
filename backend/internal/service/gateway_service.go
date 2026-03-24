@@ -6989,8 +6989,17 @@ func (s *GatewayService) RecordUsage(ctx context.Context, input *RecordUsageInpu
 
 	var cost *CostBreakdown
 
+	// 按次计费判断：仅对普通请求（非 Sora/图片生成）生效
+	if apiKey.Group != nil && result.MediaType == "" && result.ImageCount == 0 {
+		if perReqPrice, ok := apiKey.Group.GetPerRequestPrice(result.Model); ok {
+			cost = &CostBreakdown{TotalCost: perReqPrice, ActualCost: perReqPrice * multiplier}
+		}
+	}
+
 	// 根据请求类型选择计费方式
-	if result.MediaType == "image" || result.MediaType == "video" {
+	if cost != nil {
+		// 已按次计费，跳过其他计费逻辑
+	} else if result.MediaType == "image" || result.MediaType == "video" {
 		var soraConfig *SoraPriceConfig
 		if apiKey.Group != nil {
 			soraConfig = &SoraPriceConfig{

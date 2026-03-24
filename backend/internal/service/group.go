@@ -61,6 +61,10 @@ type Group struct {
 	AllowMessagesDispatch bool
 	DefaultMappedModel    string
 
+	// 分组按次收费配置
+	PerRequestPrice       *float64           // 分组默认每次请求价格，非 nil 表示开启按次计费
+	ModelPerRequestPrices map[string]float64  // 模型级按次价格覆盖，支持通配符
+
 	CreatedAt time.Time
 	UpdatedAt time.Time
 
@@ -137,6 +141,33 @@ func IsGroupContextValid(group *Group) bool {
 		return false
 	}
 	return true
+}
+
+// GetPerRequestPrice 根据请求模型获取按次计费价格
+// 优先级：model_per_request_prices[精确匹配] > model_per_request_prices[通配符] > per_request_price
+// 返回 (price, true) 表示匹配到按次计费价格，(0, false) 表示未开启按次计费
+func (g *Group) GetPerRequestPrice(requestedModel string) (float64, bool) {
+	if g.PerRequestPrice == nil {
+		return 0, false
+	}
+
+	// 检查模型级价格覆盖
+	if len(g.ModelPerRequestPrices) > 0 && requestedModel != "" {
+		// 1. 精确匹配优先
+		if price, ok := g.ModelPerRequestPrices[requestedModel]; ok {
+			return price, true
+		}
+
+		// 2. 通配符匹配
+		for pattern, price := range g.ModelPerRequestPrices {
+			if matchModelPattern(pattern, requestedModel) {
+				return price, true
+			}
+		}
+	}
+
+	// 3. 使用分组默认价格
+	return *g.PerRequestPrice, true
 }
 
 // GetRoutingAccountIDs 根据请求模型获取路由账号 ID 列表

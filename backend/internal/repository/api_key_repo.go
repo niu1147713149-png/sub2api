@@ -167,6 +167,8 @@ func (r *apiKeyRepository) GetByKeyForAuth(ctx context.Context, key string) (*se
 				group.FieldSupportedModelScopes,
 				group.FieldAllowMessagesDispatch,
 				group.FieldDefaultMappedModel,
+				group.FieldPerRequestPrice,
+				group.FieldModelPerRequestPrices,
 			)
 		}).
 		Only(ctx)
@@ -651,6 +653,8 @@ func groupEntityToService(g *dbent.Group) *service.Group {
 		SortOrder:                       g.SortOrder,
 		AllowMessagesDispatch:           g.AllowMessagesDispatch,
 		DefaultMappedModel:              g.DefaultMappedModel,
+		PerRequestPrice:                 g.PerRequestPrice,
+		ModelPerRequestPrices:           g.ModelPerRequestPrices,
 		CreatedAt:                       g.CreatedAt,
 		UpdatedAt:                       g.UpdatedAt,
 	}

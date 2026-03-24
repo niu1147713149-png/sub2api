@@ -157,6 +157,9 @@ type CreateGroupInput struct {
 	DefaultMappedModel    string
 	// 从指定分组复制账号（创建分组后在同一事务内绑定）
 	CopyAccountsFromGroupIDs []int64
+	// 分组按次收费配置
+	PerRequestPrice       *float64
+	ModelPerRequestPrices map[string]float64
 }
 
 type UpdateGroupInput struct {
@@ -196,6 +199,9 @@ type UpdateGroupInput struct {
 	DefaultMappedModel    *string
 	// 从指定分组复制账号（同步操作：先清空当前分组的账号绑定，再绑定源分组的账号）
 	CopyAccountsFromGroupIDs []int64
+	// 分组按次收费配置
+	PerRequestPrice       *float64
+	ModelPerRequestPrices map[string]float64
 }
 
 type CreateAccountInput struct {
@@ -847,6 +853,7 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 	soraImagePrice540 := normalizePrice(input.SoraImagePrice540)
 	soraVideoPrice := normalizePrice(input.SoraVideoPricePerRequest)
 	soraVideoPriceHD := normalizePrice(input.SoraVideoPricePerRequestHD)
+	perRequestPrice := normalizePrice(input.PerRequestPrice)
 
 	// 校验降级分组
 	if input.FallbackGroupID != nil {
@@ -930,6 +937,8 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		SoraStorageQuotaBytes:           input.SoraStorageQuotaBytes,
 		AllowMessagesDispatch:           input.AllowMessagesDispatch,
 		DefaultMappedModel:              input.DefaultMappedModel,
+		PerRequestPrice:                 perRequestPrice,
+		ModelPerRequestPrices:           input.ModelPerRequestPrices,
 	}
 	if err := s.groupRepo.Create(ctx, group); err != nil {
 		return nil, err
@@ -1149,6 +1158,14 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 	}
 	if input.DefaultMappedModel != nil {
 		group.DefaultMappedModel = *input.DefaultMappedModel
+	}
+
+	// 分组按次收费配置
+	if input.PerRequestPrice != nil {
+		group.PerRequestPrice = normalizePrice(input.PerRequestPrice)
+	}
+	if input.ModelPerRequestPrices != nil {
+		group.ModelPerRequestPrices = input.ModelPerRequestPrices
 	}
 
 	if err := s.groupRepo.Update(ctx, group); err != nil {

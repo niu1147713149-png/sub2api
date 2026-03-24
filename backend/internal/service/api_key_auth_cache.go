@@ -69,6 +69,10 @@ type APIKeyAuthGroupSnapshot struct {
 	// OpenAI Messages 调度配置（仅 openai 平台使用）
 	AllowMessagesDispatch bool   `json:"allow_messages_dispatch"`
 	DefaultMappedModel    string `json:"default_mapped_model,omitempty"`
+
+	// 分组按次收费配置
+	PerRequestPrice       *float64           `json:"per_request_price,omitempty"`
+	ModelPerRequestPrices map[string]float64  `json:"model_per_request_prices,omitempty"`
 }
 
 // APIKeyAuthCacheEntry 缓存条目，支持负缓存

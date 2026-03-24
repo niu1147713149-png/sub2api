@@ -79,6 +79,10 @@ const (
 	FieldAllowMessagesDispatch = "allow_messages_dispatch"
 	// FieldDefaultMappedModel holds the string denoting the default_mapped_model field in the database.
 	FieldDefaultMappedModel = "default_mapped_model"
+	// FieldPerRequestPrice holds the string denoting the per_request_price field in the database.
+	FieldPerRequestPrice = "per_request_price"
+	// FieldModelPerRequestPrices holds the string denoting the model_per_request_prices field in the database.
+	FieldModelPerRequestPrices = "model_per_request_prices"
 	// EdgeAPIKeys holds the string denoting the api_keys edge name in mutations.
 	EdgeAPIKeys = "api_keys"
 	// EdgeRedeemCodes holds the string denoting the redeem_codes edge name in mutations.
@@ -186,6 +190,8 @@ var Columns = []string{
 	FieldSortOrder,
 	FieldAllowMessagesDispatch,
 	FieldDefaultMappedModel,
+	FieldPerRequestPrice,
+	FieldModelPerRequestPrices,
 }
 
 var (

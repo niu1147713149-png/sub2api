@@ -92,6 +92,9 @@ type modelSquareGroup struct {
 	SoraImagePrice540          *float64 `json:"sora_image_price_540"`
 	SoraVideoPricePerRequest   *float64 `json:"sora_video_price_per_request"`
 	SoraVideoPricePerRequestHD *float64 `json:"sora_video_price_per_request_hd"`
+	// 分组按次收费
+	PerRequestPrice       *float64           `json:"per_request_price"`
+	ModelPerRequestPrices map[string]float64  `json:"model_per_request_prices"`
 }
 
 // modelSquareItem 模型广场模型项
@@ -142,6 +145,8 @@ func (h *SettingHandler) GetModelSquare(c *gin.Context) {
 			SoraImagePrice540:          g.SoraImagePrice540,
 			SoraVideoPricePerRequest:   g.SoraVideoPricePerRequest,
 			SoraVideoPricePerRequestHD: g.SoraVideoPricePerRequestHD,
+			PerRequestPrice:            g.PerRequestPrice,
+			ModelPerRequestPrices:      g.ModelPerRequestPrices,
 		})
 
 		gID := g.ID

@@ -289,6 +289,10 @@ func resolveOpenAIWSSessionHeaders(c *gin.Context, promptCacheKey string) openAI
 			resolution.SessionID = cacheKey
 			resolution.SessionSource = "prompt_cache_key"
 		}
+		if resolution.ConversationID == "" {
+			resolution.ConversationID = cacheKey
+			resolution.ConversationSource = "prompt_cache_key"
+		}
 	}
 	return resolution
 }

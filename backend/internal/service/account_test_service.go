@@ -304,8 +304,6 @@ func (s *AccountTestService) RunTestBackground(ctx context.Context, accountID in
 		}, nil
 	}
 
-	// Build a simple HTTP request to the upstream and check for a non-error status.
-	// For background tests we do a lightweight check: fetch the account and verify it's accessible.
 	testModel := modelID
 	if testModel == "" {
 		testModel = claude.DefaultTestModel
@@ -315,10 +313,6 @@ func (s *AccountTestService) RunTestBackground(ctx context.Context, accountID in
 		Status:    "success",
 		StartedAt: startedAt,
 	}
-
-	// Use a simple messages request as connectivity check
-	testPrompt := buildModelAwareTestPrompt(string(account.Platform), testModel)
-	reqBody := fmt.Sprintf(`{"model":"%s","max_tokens":64,"messages":[{"role":"user","content":"%s"}]}`, testModel, testPrompt)
 
 	baseURL := account.GetCredential("base_url")
 	if baseURL == "" {
@@ -330,6 +324,20 @@ func (s *AccountTestService) RunTestBackground(ctx context.Context, accountID in
 	if apiKey == "" {
 		apiKey = account.GetCredential("session_key")
 	}
+
+	proxyURL := ""
+	if account.Proxy != nil {
+		proxyURL = account.Proxy.URL()
+	}
+
+	// For non-default base URLs, use auto-detection to find the correct endpoint
+	if baseURL != "https://api.anthropic.com" {
+		return s.runBackgroundWithAutoDetection(ctx, account, baseURL, apiKey, proxyURL, testModel, startedAt)
+	}
+
+	// Default Anthropic endpoint
+	testPrompt := buildModelAwareTestPrompt(string(account.Platform), testModel)
+	reqBody := fmt.Sprintf(`{"model":"%s","max_tokens":64,"messages":[{"role":"user","content":"%s"}]}`, testModel, testPrompt)
 
 	req, err := http.NewRequestWithContext(ctx, "POST", baseURL+"/v1/messages", strings.NewReader(reqBody))
 	if err != nil {
@@ -343,10 +351,6 @@ func (s *AccountTestService) RunTestBackground(ctx context.Context, accountID in
 	req.Header.Set("X-Api-Key", apiKey)
 	req.Header.Set("Anthropic-Version", "2023-06-01")
 
-	proxyURL := ""
-	if account.Proxy != nil {
-		proxyURL = account.Proxy.URL()
-	}
 	resp, err := s.httpUpstream.Do(req, proxyURL, account.ID, account.Concurrency)
 	if err != nil {
 		result.Status = "error"
@@ -369,6 +373,129 @@ func (s *AccountTestService) RunTestBackground(ctx context.Context, accountID in
 		if len(result.ResponseText) > 2000 {
 			result.ResponseText = result.ResponseText[:2000]
 		}
+	}
+
+	return result, nil
+}
+
+// runBackgroundWithAutoDetection probes autoDetectEndpoints to find a working
+// endpoint on a custom base URL, then performs the actual test request.
+func (s *AccountTestService) runBackgroundWithAutoDetection(
+	ctx context.Context, account *Account,
+	baseURL, apiKey, proxyURL, testModel string,
+	startedAt time.Time,
+) (*ScheduledTestResult, error) {
+	result := &ScheduledTestResult{Status: "error", StartedAt: startedAt}
+
+	// Probe each endpoint to find one that doesn't 404
+	var matchedIdx = -1
+	for i := range autoDetectEndpoints {
+		ep := &autoDetectEndpoints[i]
+		probeBody, extraHeaders := ep.BuildProbe(testModel)
+
+		fullURL := baseURL + ep.Path
+		if strings.Contains(ep.Path, "{model}") {
+			m := testModel
+			if gm, ok := extraHeaders["_gemini_model"]; ok && gm != "" {
+				m = gm
+			}
+			if m == "" {
+				m = "gemini-2.0-flash"
+			}
+			fullURL = baseURL + strings.Replace(ep.Path, "{model}", m, 1)
+		}
+		delete(extraHeaders, "_gemini_model")
+
+		probeCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		probeReq, err := http.NewRequestWithContext(probeCtx, "POST", fullURL, bytes.NewReader(probeBody))
+		if err != nil {
+			cancel()
+			continue
+		}
+		for k, v := range extraHeaders {
+			probeReq.Header.Set(k, v)
+		}
+		if strings.Contains(ep.Path, "/v1/messages") {
+			probeReq.Header.Set("x-api-key", apiKey)
+		} else {
+			probeReq.Header.Set("Authorization", "Bearer "+apiKey)
+		}
+
+		resp, err := s.httpUpstream.Do(probeReq, proxyURL, account.ID, account.Concurrency)
+		cancel()
+		if err != nil {
+			continue
+		}
+		sc := resp.StatusCode
+		_ = resp.Body.Close()
+
+		if sc == http.StatusNotFound || sc == http.StatusMethodNotAllowed {
+			continue
+		}
+		matchedIdx = i
+		break
+	}
+
+	if matchedIdx == -1 {
+		result.ErrorMessage = "No working API endpoint detected on " + baseURL
+		result.FinishedAt = time.Now()
+		result.LatencyMs = time.Since(startedAt).Milliseconds()
+		return result, nil
+	}
+
+	// Send the real test request using the matched endpoint
+	ep := &autoDetectEndpoints[matchedIdx]
+	reqBody, extraHeaders := ep.BuildProbe(testModel)
+	fullURL := baseURL + ep.Path
+	if strings.Contains(ep.Path, "{model}") {
+		m := testModel
+		if gm, ok := extraHeaders["_gemini_model"]; ok && gm != "" {
+			m = gm
+		}
+		if m == "" {
+			m = "gemini-2.0-flash"
+		}
+		fullURL = baseURL + strings.Replace(ep.Path, "{model}", m, 1)
+	}
+	delete(extraHeaders, "_gemini_model")
+
+	req, err := http.NewRequestWithContext(ctx, "POST", fullURL, bytes.NewReader(reqBody))
+	if err != nil {
+		result.ErrorMessage = "Failed to create request: " + err.Error()
+		result.FinishedAt = time.Now()
+		result.LatencyMs = time.Since(startedAt).Milliseconds()
+		return result, nil
+	}
+	for k, v := range extraHeaders {
+		req.Header.Set(k, v)
+	}
+	if strings.Contains(ep.Path, "/v1/messages") {
+		req.Header.Set("x-api-key", apiKey)
+	} else {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
+
+	resp, err := s.httpUpstream.Do(req, proxyURL, account.ID, account.Concurrency)
+	if err != nil {
+		result.ErrorMessage = "Request failed: " + err.Error()
+		result.FinishedAt = time.Now()
+		result.LatencyMs = time.Since(startedAt).Milliseconds()
+		return result, nil
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	result.FinishedAt = time.Now()
+	result.LatencyMs = time.Since(startedAt).Milliseconds()
+
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		result.Status = "success"
+		result.ResponseText = string(body)
+		if len(result.ResponseText) > 2000 {
+			result.ResponseText = result.ResponseText[:2000]
+		}
+	} else {
+		result.ErrorMessage = fmt.Sprintf("Upstream returned status %d: %s", resp.StatusCode, string(body))
 	}
 
 	return result, nil

@@ -8252,6 +8252,10 @@ type GroupMutation struct {
 	addsort_order                           *int
 	allow_messages_dispatch                 *bool
 	default_mapped_model                    *string
+	per_request_price                       *float64
+	clearedper_request_price                bool
+	model_per_request_prices                *map[string]float64
+	clearedmodel_per_request_prices         bool
 	clearedFields                           map[string]struct{}
 	api_keys                                map[int64]struct{}
 	removedapi_keys                         map[int64]struct{}
@@ -10068,6 +10072,68 @@ func (m *GroupMutation) ResetDefaultMappedModel() {
 	m.default_mapped_model = nil
 }
 
+// SetPerRequestPrice sets the "per_request_price" field.
+func (m *GroupMutation) SetPerRequestPrice(f float64) {
+	m.per_request_price = &f
+}
+
+// PerRequestPrice returns the value of the "per_request_price" field in the mutation.
+func (m *GroupMutation) PerRequestPrice() (r float64, exists bool) {
+	v := m.per_request_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearPerRequestPrice clears the value of the "per_request_price" field.
+func (m *GroupMutation) ClearPerRequestPrice() {
+	m.per_request_price = nil
+	m.clearedper_request_price = true
+}
+
+// PerRequestPriceCleared reports if the "per_request_price" field was cleared in this mutation.
+func (m *GroupMutation) PerRequestPriceCleared() bool {
+	return m.clearedper_request_price
+}
+
+// ResetPerRequestPrice resets all changes to the "per_request_price" field.
+func (m *GroupMutation) ResetPerRequestPrice() {
+	m.per_request_price = nil
+	m.clearedper_request_price = false
+}
+
+// SetModelPerRequestPrices sets the "model_per_request_prices" field.
+func (m *GroupMutation) SetModelPerRequestPrices(v map[string]float64) {
+	m.model_per_request_prices = &v
+}
+
+// ModelPerRequestPrices returns the value of the "model_per_request_prices" field in the mutation.
+func (m *GroupMutation) ModelPerRequestPrices() (r map[string]float64, exists bool) {
+	v := m.model_per_request_prices
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearModelPerRequestPrices clears the value of the "model_per_request_prices" field.
+func (m *GroupMutation) ClearModelPerRequestPrices() {
+	m.model_per_request_prices = nil
+	m.clearedmodel_per_request_prices = true
+}
+
+// ModelPerRequestPricesCleared reports if the "model_per_request_prices" field was cleared in this mutation.
+func (m *GroupMutation) ModelPerRequestPricesCleared() bool {
+	return m.clearedmodel_per_request_prices
+}
+
+// ResetModelPerRequestPrices resets all changes to the "model_per_request_prices" field.
+func (m *GroupMutation) ResetModelPerRequestPrices() {
+	m.model_per_request_prices = nil
+	m.clearedmodel_per_request_prices = false
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by ids.
 func (m *GroupMutation) AddAPIKeyIDs(ids ...int64) {
 	if m.api_keys == nil {
@@ -10523,6 +10589,12 @@ func (m *GroupMutation) Fields() []string {
 	if m.default_mapped_model != nil {
 		fields = append(fields, group.FieldDefaultMappedModel)
 	}
+	if m.per_request_price != nil {
+		fields = append(fields, group.FieldPerRequestPrice)
+	}
+	if m.model_per_request_prices != nil {
+		fields = append(fields, group.FieldModelPerRequestPrices)
+	}
 	return fields
 }
 
@@ -10595,6 +10667,10 @@ func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 		return m.AllowMessagesDispatch()
 	case group.FieldDefaultMappedModel:
 		return m.DefaultMappedModel()
+	case group.FieldPerRequestPrice:
+		return m.PerRequestPrice()
+	case group.FieldModelPerRequestPrices:
+		return m.ModelPerRequestPrices()
 	}
 	return nil, false
 }
@@ -10900,6 +10976,20 @@ func (m *GroupMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDefaultMappedModel(v)
+		return nil
+	case group.FieldPerRequestPrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPerRequestPrice(v)
+		return nil
+	case group.FieldModelPerRequestPrices:
+		v, ok := value.(map[string]float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetModelPerRequestPrices(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Group field %s", name)
@@ -11333,6 +11423,12 @@ func (m *GroupMutation) ResetField(name string) error {
 		return nil
 	case group.FieldDefaultMappedModel:
 		m.ResetDefaultMappedModel()
+		return nil
+	case group.FieldPerRequestPrice:
+		m.ResetPerRequestPrice()
+		return nil
+	case group.FieldModelPerRequestPrices:
+		m.ResetModelPerRequestPrices()
 		return nil
 	}
 	return fmt.Errorf("unknown Group field %s", name)

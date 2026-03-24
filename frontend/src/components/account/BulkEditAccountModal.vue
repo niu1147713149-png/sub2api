@@ -1285,10 +1285,18 @@ const buildUpdatePayload = (): Record<string, unknown> | null => {
         }
         credentials.model_mapping = mapping
         credentialsChanged = true
+      } else {
+        // 白名单为空 → 清除已有的 model_mapping
+        credentials.model_mapping = null
+        credentialsChanged = true
       }
     } else {
       if (modelMapping) {
         credentials.model_mapping = modelMapping
+        credentialsChanged = true
+      } else {
+        // 映射为空 → 清除已有的 model_mapping
+        credentials.model_mapping = null
         credentialsChanged = true
       }
     }

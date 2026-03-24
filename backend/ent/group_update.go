@@ -653,6 +653,38 @@ func (_u *GroupUpdate) SetNillableDefaultMappedModel(v *string) *GroupUpdate {
 	return _u
 }
 
+// SetPerRequestPrice sets the "per_request_price" field.
+func (_u *GroupUpdate) SetPerRequestPrice(v float64) *GroupUpdate {
+	_u.mutation.SetPerRequestPrice(v)
+	return _u
+}
+
+// SetNillablePerRequestPrice sets the "per_request_price" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillablePerRequestPrice(v *float64) *GroupUpdate {
+	if v != nil {
+		_u.SetPerRequestPrice(*v)
+	}
+	return _u
+}
+
+// ClearPerRequestPrice clears the value of the "per_request_price" field.
+func (_u *GroupUpdate) ClearPerRequestPrice() *GroupUpdate {
+	_u.mutation.ClearPerRequestPrice()
+	return _u
+}
+
+// SetModelPerRequestPrices sets the "model_per_request_prices" field.
+func (_u *GroupUpdate) SetModelPerRequestPrices(v map[string]float64) *GroupUpdate {
+	_u.mutation.SetModelPerRequestPrices(v)
+	return _u
+}
+
+// ClearModelPerRequestPrices clears the value of the "model_per_request_prices" field.
+func (_u *GroupUpdate) ClearModelPerRequestPrices() *GroupUpdate {
+	_u.mutation.ClearModelPerRequestPrices()
+	return _u
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by IDs.
 func (_u *GroupUpdate) AddAPIKeyIDs(ids ...int64) *GroupUpdate {
 	_u.mutation.AddAPIKeyIDs(ids...)
@@ -1148,6 +1180,18 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.DefaultMappedModel(); ok {
 		_spec.SetField(group.FieldDefaultMappedModel, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.PerRequestPrice(); ok {
+		_spec.SetField(group.FieldPerRequestPrice, field.TypeFloat64, value)
+	}
+	if _u.mutation.PerRequestPriceCleared() {
+		_spec.ClearField(group.FieldPerRequestPrice, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.ModelPerRequestPrices(); ok {
+		_spec.SetField(group.FieldModelPerRequestPrices, field.TypeJSON, value)
+	}
+	if _u.mutation.ModelPerRequestPricesCleared() {
+		_spec.ClearField(group.FieldModelPerRequestPrices, field.TypeJSON)
 	}
 	if _u.mutation.APIKeysCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -2081,6 +2125,38 @@ func (_u *GroupUpdateOne) SetNillableDefaultMappedModel(v *string) *GroupUpdateO
 	return _u
 }
 
+// SetPerRequestPrice sets the "per_request_price" field.
+func (_u *GroupUpdateOne) SetPerRequestPrice(v float64) *GroupUpdateOne {
+	_u.mutation.SetPerRequestPrice(v)
+	return _u
+}
+
+// SetNillablePerRequestPrice sets the "per_request_price" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillablePerRequestPrice(v *float64) *GroupUpdateOne {
+	if v != nil {
+		_u.SetPerRequestPrice(*v)
+	}
+	return _u
+}
+
+// ClearPerRequestPrice clears the value of the "per_request_price" field.
+func (_u *GroupUpdateOne) ClearPerRequestPrice() *GroupUpdateOne {
+	_u.mutation.ClearPerRequestPrice()
+	return _u
+}
+
+// SetModelPerRequestPrices sets the "model_per_request_prices" field.
+func (_u *GroupUpdateOne) SetModelPerRequestPrices(v map[string]float64) *GroupUpdateOne {
+	_u.mutation.SetModelPerRequestPrices(v)
+	return _u
+}
+
+// ClearModelPerRequestPrices clears the value of the "model_per_request_prices" field.
+func (_u *GroupUpdateOne) ClearModelPerRequestPrices() *GroupUpdateOne {
+	_u.mutation.ClearModelPerRequestPrices()
+	return _u
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by IDs.
 func (_u *GroupUpdateOne) AddAPIKeyIDs(ids ...int64) *GroupUpdateOne {
 	_u.mutation.AddAPIKeyIDs(ids...)
@@ -2606,6 +2682,18 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	}
 	if value, ok := _u.mutation.DefaultMappedModel(); ok {
 		_spec.SetField(group.FieldDefaultMappedModel, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.PerRequestPrice(); ok {
+		_spec.SetField(group.FieldPerRequestPrice, field.TypeFloat64, value)
+	}
+	if _u.mutation.PerRequestPriceCleared() {
+		_spec.ClearField(group.FieldPerRequestPrice, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.ModelPerRequestPrices(); ok {
+		_spec.SetField(group.FieldModelPerRequestPrices, field.TypeJSON, value)
+	}
+	if _u.mutation.ModelPerRequestPricesCleared() {
+		_spec.ClearField(group.FieldModelPerRequestPrices, field.TypeJSON)
 	}
 	if _u.mutation.APIKeysCleared() {
 		edge := &sqlgraph.EdgeSpec{

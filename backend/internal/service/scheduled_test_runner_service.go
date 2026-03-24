@@ -18,11 +18,13 @@ type ScheduledTestRunnerService struct {
 	scheduledSvc   *ScheduledTestService
 	accountTestSvc *AccountTestService
 	rateLimitSvc   *RateLimitService
+	accountRepo    AccountRepository
 	cfg            *config.Config
 
-	cron      *cron.Cron
-	startOnce sync.Once
-	stopOnce  sync.Once
+	cron             *cron.Cron
+	startOnce        sync.Once
+	stopOnce         sync.Once
+	errorRecoverTick uint64
 }
 
 // NewScheduledTestRunnerService creates a new runner.
@@ -31,6 +33,7 @@ func NewScheduledTestRunnerService(
 	scheduledSvc *ScheduledTestService,
 	accountTestSvc *AccountTestService,
 	rateLimitSvc *RateLimitService,
+	accountRepo AccountRepository,
 	cfg *config.Config,
 ) *ScheduledTestRunnerService {
 	return &ScheduledTestRunnerService{
@@ -38,6 +41,7 @@ func NewScheduledTestRunnerService(
 		scheduledSvc:   scheduledSvc,
 		accountTestSvc: accountTestSvc,
 		rateLimitSvc:   rateLimitSvc,
+		accountRepo:    accountRepo,
 		cfg:            cfg,
 	}
 }
@@ -91,32 +95,35 @@ func (s *ScheduledTestRunnerService) runScheduled() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
+	// --- Scheduled test plans ---
 	now := time.Now()
 	plans, err := s.planRepo.ListDue(ctx, now)
 	if err != nil {
 		logger.LegacyPrintf("service.scheduled_test_runner", "[ScheduledTestRunner] ListDue error: %v", err)
-		return
-	}
-	if len(plans) == 0 {
-		return
-	}
+	} else if len(plans) > 0 {
+		logger.LegacyPrintf("service.scheduled_test_runner", "[ScheduledTestRunner] found %d due plans", len(plans))
 
-	logger.LegacyPrintf("service.scheduled_test_runner", "[ScheduledTestRunner] found %d due plans", len(plans))
+		sem := make(chan struct{}, scheduledTestDefaultMaxWorkers)
+		var wg sync.WaitGroup
 
-	sem := make(chan struct{}, scheduledTestDefaultMaxWorkers)
-	var wg sync.WaitGroup
+		for _, plan := range plans {
+			sem <- struct{}{}
+			wg.Add(1)
+			go func(p *ScheduledTestPlan) {
+				defer wg.Done()
+				defer func() { <-sem }()
+				s.runOnePlan(ctx, p)
+			}(plan)
+		}
 
-	for _, plan := range plans {
-		sem <- struct{}{}
-		wg.Add(1)
-		go func(p *ScheduledTestPlan) {
-			defer wg.Done()
-			defer func() { <-sem }()
-			s.runOnePlan(ctx, p)
-		}(plan)
+		wg.Wait()
 	}
 
-	wg.Wait()
+	// --- Error account auto-recovery (every 10 ticks / ~10 minutes) ---
+	s.errorRecoverTick++
+	if s.errorRecoverTick%10 == 0 {
+		s.runErrorAccountRecovery()
+	}
 }
 
 func (s *ScheduledTestRunnerService) runOnePlan(ctx context.Context, plan *ScheduledTestPlan) {
@@ -167,4 +174,49 @@ func (s *ScheduledTestRunnerService) tryRecoverAccount(ctx context.Context, acco
 	if recovery.ClearedRateLimit {
 		logger.LegacyPrintf("service.scheduled_test_runner", "[ScheduledTestRunner] plan=%d auto-recover: account=%d cleared rate-limit/runtime state", planID, accountID)
 	}
+}
+
+// runErrorAccountRecovery tests all error-status accounts and auto-recovers those that pass.
+func (s *ScheduledTestRunnerService) runErrorAccountRecovery() {
+	if s.accountRepo == nil || s.rateLimitSvc == nil {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	accounts, err := s.accountRepo.ListErrorAccounts(ctx)
+	if err != nil {
+		logger.LegacyPrintf("service.scheduled_test_runner", "[ScheduledTestRunner] ListErrorAccounts error: %v", err)
+		return
+	}
+	if len(accounts) == 0 {
+		return
+	}
+
+	logger.LegacyPrintf("service.scheduled_test_runner", "[ScheduledTestRunner] error-recovery: found %d error accounts to test", len(accounts))
+
+	sem := make(chan struct{}, scheduledTestDefaultMaxWorkers)
+	var wg sync.WaitGroup
+
+	for _, acct := range accounts {
+		sem <- struct{}{}
+		wg.Add(1)
+		go func(a Account) {
+			defer wg.Done()
+			defer func() { <-sem }()
+
+			result, err := s.accountTestSvc.RunTestBackground(ctx, a.ID, "")
+			if err != nil {
+				logger.LegacyPrintf("service.scheduled_test_runner", "[ScheduledTestRunner] error-recovery: account=%d test error: %v", a.ID, err)
+				return
+			}
+
+			if result.Status == "success" {
+				s.tryRecoverAccount(ctx, a.ID, 0)
+			}
+		}(acct)
+	}
+
+	wg.Wait()
 }

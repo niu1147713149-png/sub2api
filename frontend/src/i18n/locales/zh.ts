@@ -1519,6 +1519,7 @@ export default {
       nonExclusive: '公开',
       public: '公开',
       rateAndAccounts: '{rate}x 费率 · {count} 个账号',
+      perRequestAndAccounts: '按次 ${price}/次 · {rate}x 倍率 · {count} 个账号',
       accountsCount: '{count} 个账号',
       enterGroupName: '请输入分组名称',
       optionalDescription: '可选描述',
@@ -1564,6 +1565,20 @@ export default {
         videoHd: '视频（Pro-HD）($)',
         storageQuota: '存储配额',
         storageQuotaHint: '单位 GB，设置该分组用户的 Sora 存储配额上限，0 表示使用系统默认'
+      },
+      perRequestPricing: {
+        title: '按次计费',
+        description: '开启后该分组下所有请求按固定价格收费，不再按 token 计费。仅对普通文本请求生效，图片/视频生成仍走原有逻辑。',
+        enabled: '按次计费已开启',
+        disabled: '按次计费已关闭（按 token 计费）',
+        defaultPrice: '默认每次价格 ($)',
+        defaultPriceHint: '每次请求的默认收费金额（美元），最终扣费 = 价格 × 倍率',
+        modelPrices: '模型级价格覆盖',
+        modelPricesHint: '为特定模型设置不同的按次价格，支持通配符（如 claude-opus-*）',
+        modelPattern: '模型匹配模式',
+        modelPatternPlaceholder: '例如: claude-opus-*',
+        modelPrice: '每次价格 ($)',
+        addRule: '添加规则'
       },
       claudeCode: {
         title: 'Claude Code 客户端限制',
@@ -4904,6 +4919,7 @@ export default {
     next: '下一页',
     noModels: '未找到模型',
     perUsage: '按次计费',
+    perRequest: '每次请求',
     perImage: '每张图片',
     perVideo: '每次视频',
     perVideoHd: '每次视频(HD)',

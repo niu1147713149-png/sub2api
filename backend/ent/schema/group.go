@@ -157,6 +157,17 @@ func (Group) Fields() []ent.Field {
 			MaxLen(100).
 			Default("").
 			Comment("默认映射模型 ID，当账号级映射找不到时使用此值"),
+
+		// 分组按次收费配置 (added by migration 080)
+		field.Float("per_request_price").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,8)"}).
+			Comment("分组默认每次请求价格，非 nil 表示开启按次计费"),
+		field.JSON("model_per_request_prices", map[string]float64{}).
+			Optional().
+			SchemaType(map[string]string{dialect.Postgres: "jsonb"}).
+			Comment("模型级按次价格覆盖，支持通配符"),
 	}
 }
 

@@ -95,6 +95,10 @@ func (s *accountRepoStub) ListByPlatform(ctx context.Context, platform string) (
 	panic("unexpected ListByPlatform call")
 }
 
+func (s *accountRepoStub) ListErrorAccounts(ctx context.Context) ([]Account, error) {
+	return nil, nil
+}
+
 func (s *accountRepoStub) UpdateLastUsed(ctx context.Context, id int64) error {
 	panic("unexpected UpdateLastUsed call")
 }

@@ -394,6 +394,9 @@ export interface Group {
   fallback_group_id_on_invalid_request: number | null
   // OpenAI Messages 调度开关（用户侧需要此字段判断是否展示 Claude Code 教程）
   allow_messages_dispatch?: boolean
+  // 分组按次收费配置
+  per_request_price: number | null
+  model_per_request_prices: Record<string, number> | null
   created_at: string
   updated_at: string
 }
@@ -502,6 +505,9 @@ export interface CreateGroupRequest {
   supported_model_scopes?: string[]
   // 从指定分组复制账号
   copy_accounts_from_group_ids?: number[]
+  // 分组按次收费配置
+  per_request_price?: number | null
+  model_per_request_prices?: Record<string, number> | null
 }
 
 export interface UpdateGroupRequest {
@@ -529,6 +535,9 @@ export interface UpdateGroupRequest {
   mcp_xml_inject?: boolean
   supported_model_scopes?: string[]
   copy_accounts_from_group_ids?: number[]
+  // 分组按次收费配置
+  per_request_price?: number | null
+  model_per_request_prices?: Record<string, number> | null
 }
 
 // ==================== Account & Proxy Types ====================

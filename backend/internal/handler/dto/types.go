@@ -102,6 +102,10 @@ type Group struct {
 	// OpenAI Messages 调度开关（用户侧需要此字段判断是否展示 Claude Code 教程）
 	AllowMessagesDispatch bool `json:"allow_messages_dispatch"`
 
+	// 分组按次收费配置
+	PerRequestPrice       *float64           `json:"per_request_price"`
+	ModelPerRequestPrices map[string]float64  `json:"model_per_request_prices"`
+
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

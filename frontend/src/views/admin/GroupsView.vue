@@ -148,8 +148,16 @@
             </div>
           </template>
 
-          <template #cell-rate_multiplier="{ value }">
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{ value }}x</span>
+          <template #cell-rate_multiplier="{ value, row }">
+            <template v-if="row.per_request_price != null">
+              <span class="inline-flex items-center gap-1 text-sm">
+                <span class="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">{{ t('admin.groups.perRequestPricing.title') }}</span>
+                <span class="font-mono text-amber-700 dark:text-amber-400">${{ row.per_request_price }}</span>
+              </span>
+            </template>
+            <template v-else>
+              <span class="text-sm text-gray-700 dark:text-gray-300">{{ value }}x</span>
+            </template>
           </template>
 
           <template #cell-is_exclusive="{ value }">
@@ -480,6 +488,86 @@
                 class="input"
                 placeholder="0.268"
               />
+            </div>
+          </div>
+        </div>
+
+        <!-- 按次计费配置（所有平台可见） -->
+        <div class="border-t pt-4">
+          <div class="mb-1.5 flex items-center gap-1">
+            <label class="block font-medium text-gray-700 dark:text-gray-300">
+              {{ t('admin.groups.perRequestPricing.title') }}
+            </label>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+            {{ t('admin.groups.perRequestPricing.description') }}
+          </p>
+          <div class="flex items-center gap-3 mb-3">
+            <button
+              type="button"
+              @click="createForm.per_request_pricing_enabled = !createForm.per_request_pricing_enabled"
+              :class="[
+                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                createForm.per_request_pricing_enabled ? 'bg-primary-500' : 'bg-gray-300 dark:bg-dark-600'
+              ]"
+            >
+              <span
+                :class="[
+                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                  createForm.per_request_pricing_enabled ? 'translate-x-6' : 'translate-x-1'
+                ]"
+              />
+            </button>
+            <span class="text-sm text-gray-500 dark:text-gray-400">
+              {{ createForm.per_request_pricing_enabled ? t('admin.groups.perRequestPricing.enabled') : t('admin.groups.perRequestPricing.disabled') }}
+            </span>
+          </div>
+          <div v-if="createForm.per_request_pricing_enabled" class="space-y-4 border-l-2 border-primary-200 pl-4 dark:border-primary-800">
+            <div>
+              <label class="input-label">{{ t('admin.groups.perRequestPricing.defaultPrice') }}</label>
+              <input
+                v-model.number="createForm.per_request_price"
+                type="number"
+                step="0.001"
+                min="0"
+                class="input"
+                placeholder="0.01"
+              />
+              <p class="input-hint">{{ t('admin.groups.perRequestPricing.defaultPriceHint') }}</p>
+            </div>
+            <div>
+              <label class="input-label">{{ t('admin.groups.perRequestPricing.modelPrices') }}</label>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ t('admin.groups.perRequestPricing.modelPricesHint') }}</p>
+              <div v-for="(rule, index) in createForm.model_per_request_prices" :key="index" class="flex items-center gap-2 mb-2">
+                <input
+                  v-model="rule.pattern"
+                  type="text"
+                  class="input flex-1"
+                  :placeholder="t('admin.groups.perRequestPricing.modelPatternPlaceholder')"
+                />
+                <input
+                  v-model.number="rule.price"
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  class="input w-32"
+                  placeholder="0.05"
+                />
+                <button
+                  type="button"
+                  @click="createForm.model_per_request_prices.splice(index, 1)"
+                  class="text-red-500 hover:text-red-700 p-1"
+                >
+                  <Icon name="trash" size="sm" />
+                </button>
+              </div>
+              <button
+                type="button"
+                @click="createForm.model_per_request_prices.push({ pattern: '', price: null })"
+                class="text-sm text-primary-500 hover:text-primary-700"
+              >
+                + {{ t('admin.groups.perRequestPricing.addRule') }}
+              </button>
             </div>
           </div>
         </div>
@@ -1215,6 +1303,86 @@
                 class="input"
                 placeholder="0.268"
               />
+            </div>
+          </div>
+        </div>
+
+        <!-- 按次计费配置（所有平台可见） - 编辑 -->
+        <div class="border-t pt-4">
+          <div class="mb-1.5 flex items-center gap-1">
+            <label class="block font-medium text-gray-700 dark:text-gray-300">
+              {{ t('admin.groups.perRequestPricing.title') }}
+            </label>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+            {{ t('admin.groups.perRequestPricing.description') }}
+          </p>
+          <div class="flex items-center gap-3 mb-3">
+            <button
+              type="button"
+              @click="editForm.per_request_pricing_enabled = !editForm.per_request_pricing_enabled"
+              :class="[
+                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                editForm.per_request_pricing_enabled ? 'bg-primary-500' : 'bg-gray-300 dark:bg-dark-600'
+              ]"
+            >
+              <span
+                :class="[
+                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                  editForm.per_request_pricing_enabled ? 'translate-x-6' : 'translate-x-1'
+                ]"
+              />
+            </button>
+            <span class="text-sm text-gray-500 dark:text-gray-400">
+              {{ editForm.per_request_pricing_enabled ? t('admin.groups.perRequestPricing.enabled') : t('admin.groups.perRequestPricing.disabled') }}
+            </span>
+          </div>
+          <div v-if="editForm.per_request_pricing_enabled" class="space-y-4 border-l-2 border-primary-200 pl-4 dark:border-primary-800">
+            <div>
+              <label class="input-label">{{ t('admin.groups.perRequestPricing.defaultPrice') }}</label>
+              <input
+                v-model.number="editForm.per_request_price"
+                type="number"
+                step="0.001"
+                min="0"
+                class="input"
+                placeholder="0.01"
+              />
+              <p class="input-hint">{{ t('admin.groups.perRequestPricing.defaultPriceHint') }}</p>
+            </div>
+            <div>
+              <label class="input-label">{{ t('admin.groups.perRequestPricing.modelPrices') }}</label>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ t('admin.groups.perRequestPricing.modelPricesHint') }}</p>
+              <div v-for="(rule, index) in editForm.model_per_request_prices" :key="index" class="flex items-center gap-2 mb-2">
+                <input
+                  v-model="rule.pattern"
+                  type="text"
+                  class="input flex-1"
+                  :placeholder="t('admin.groups.perRequestPricing.modelPatternPlaceholder')"
+                />
+                <input
+                  v-model.number="rule.price"
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  class="input w-32"
+                  placeholder="0.05"
+                />
+                <button
+                  type="button"
+                  @click="editForm.model_per_request_prices.splice(index, 1)"
+                  class="text-red-500 hover:text-red-700 p-1"
+                >
+                  <Icon name="trash" size="sm" />
+                </button>
+              </div>
+              <button
+                type="button"
+                @click="editForm.model_per_request_prices.push({ pattern: '', price: null })"
+                class="text-sm text-primary-500 hover:text-primary-700"
+              >
+                + {{ t('admin.groups.perRequestPricing.addRule') }}
+              </button>
             </div>
           </div>
         </div>
@@ -2011,6 +2179,10 @@ const createForm = reactive({
   sora_video_price_per_request: null as number | null,
   sora_video_price_per_request_hd: null as number | null,
   sora_storage_quota_gb: null as number | null,
+  // 按次计费配置
+  per_request_pricing_enabled: false,
+  per_request_price: null as number | null,
+  model_per_request_prices: [] as { pattern: string; price: number | null }[],
   // Claude Code 客户端限制（仅 anthropic 平台使用）
   claude_code_only: false,
   fallback_group_id: null as number | null,
@@ -2255,6 +2427,10 @@ const editForm = reactive({
   sora_video_price_per_request: null as number | null,
   sora_video_price_per_request_hd: null as number | null,
   sora_storage_quota_gb: null as number | null,
+  // 按次计费配置
+  per_request_pricing_enabled: false,
+  per_request_price: null as number | null,
+  model_per_request_prices: [] as { pattern: string; price: number | null }[],
   // Claude Code 客户端限制（仅 anthropic 平台使用）
   claude_code_only: false,
   fallback_group_id: null as number | null,
@@ -2358,6 +2534,9 @@ const closeCreateModal = () => {
   createForm.sora_video_price_per_request = null
   createForm.sora_video_price_per_request_hd = null
   createForm.sora_storage_quota_gb = null
+  createForm.per_request_pricing_enabled = false
+  createForm.per_request_price = null
+  createForm.model_per_request_prices = []
   createForm.claude_code_only = false
   createForm.fallback_group_id = null
   createForm.fallback_group_id_on_invalid_request = null
@@ -2377,11 +2556,18 @@ const handleCreateGroup = async () => {
   submitting.value = true
   try {
     // 构建请求数据，包含模型路由配置
-    const { sora_storage_quota_gb: createQuotaGb, ...createRest } = createForm
+    const { sora_storage_quota_gb: createQuotaGb, per_request_pricing_enabled: _prEnabled, model_per_request_prices: createModelPrices, ...createRest } = createForm
+    // 构建按次计费数据
+    const perRequestPrice = createForm.per_request_pricing_enabled ? createForm.per_request_price : null
+    const modelPerRequestPrices: Record<string, number> | null = createForm.per_request_pricing_enabled && createModelPrices.length > 0
+      ? Object.fromEntries(createModelPrices.filter(r => r.pattern && r.price != null).map(r => [r.pattern, r.price!]))
+      : null
     const requestData = {
       ...createRest,
       sora_storage_quota_bytes: createQuotaGb ? Math.round(createQuotaGb * 1024 * 1024 * 1024) : 0,
-      model_routing: convertRoutingRulesToApiFormat(createModelRoutingRules.value)
+      model_routing: convertRoutingRulesToApiFormat(createModelRoutingRules.value),
+      per_request_price: perRequestPrice,
+      model_per_request_prices: modelPerRequestPrices
     }
     await adminAPI.groups.create(requestData)
     appStore.showSuccess(t('admin.groups.groupCreated'))
@@ -2420,6 +2606,11 @@ const handleEdit = async (group: AdminGroup) => {
   editForm.sora_video_price_per_request = group.sora_video_price_per_request
   editForm.sora_video_price_per_request_hd = group.sora_video_price_per_request_hd
   editForm.sora_storage_quota_gb = group.sora_storage_quota_bytes ? Number((group.sora_storage_quota_bytes / (1024 * 1024 * 1024)).toFixed(2)) : null
+  editForm.per_request_pricing_enabled = group.per_request_price != null
+  editForm.per_request_price = group.per_request_price
+  editForm.model_per_request_prices = group.model_per_request_prices
+    ? Object.entries(group.model_per_request_prices).map(([pattern, price]) => ({ pattern, price }))
+    : []
   editForm.claude_code_only = group.claude_code_only || false
   editForm.fallback_group_id = group.fallback_group_id
   editForm.fallback_group_id_on_invalid_request = group.fallback_group_id_on_invalid_request
@@ -2455,7 +2646,12 @@ const handleUpdateGroup = async () => {
   submitting.value = true
   try {
     // 转换 fallback_group_id: null -> 0 (后端使用 0 表示清除)
-    const { sora_storage_quota_gb: editQuotaGb, ...editRest } = editForm
+    const { sora_storage_quota_gb: editQuotaGb, per_request_pricing_enabled: _prEditEnabled, model_per_request_prices: editModelPrices, ...editRest } = editForm
+    // 构建按次计费数据
+    const editPerRequestPrice = editForm.per_request_pricing_enabled ? editForm.per_request_price : -1  // -1 triggers normalizePrice to nil
+    const editModelPerRequestPrices: Record<string, number> | null = editForm.per_request_pricing_enabled && editModelPrices.length > 0
+      ? Object.fromEntries(editModelPrices.filter(r => r.pattern && r.price != null).map(r => [r.pattern, r.price!]))
+      : null
     const payload = {
       ...editRest,
       sora_storage_quota_bytes: editQuotaGb ? Math.round(editQuotaGb * 1024 * 1024 * 1024) : 0,
@@ -2464,7 +2660,9 @@ const handleUpdateGroup = async () => {
         editForm.fallback_group_id_on_invalid_request === null
           ? 0
           : editForm.fallback_group_id_on_invalid_request,
-      model_routing: convertRoutingRulesToApiFormat(editModelRoutingRules.value)
+      model_routing: convertRoutingRulesToApiFormat(editModelRoutingRules.value),
+      per_request_price: editPerRequestPrice,
+      model_per_request_prices: editModelPerRequestPrices
     }
     await adminAPI.groups.update(editingGroup.value.id, payload)
     appStore.showSuccess(t('admin.groups.groupUpdated'))

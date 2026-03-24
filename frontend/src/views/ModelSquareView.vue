@@ -323,7 +323,7 @@
               <div v-if="getModelPerUsagePricing(model)" class="rounded-lg bg-amber-50 dark:bg-amber-900/15 p-2.5 border border-amber-200 dark:border-amber-800/50">
                 <div class="flex items-center gap-1.5 mb-2">
                   <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-200 text-amber-800 dark:bg-amber-800/40 dark:text-amber-300">{{ t('modelSquare.perUsage') }}</span>
-                  <span class="text-[9px] text-amber-600 dark:text-amber-400">{{ getModelPerUsagePricing(model)!.type === 'sora' ? 'Sora' : t('modelSquare.perImage') }}</span>
+                  <span class="text-[9px] text-amber-600 dark:text-amber-400">{{ getModelPerUsagePricing(model)!.type === 'sora' ? 'Sora' : getModelPerUsagePricing(model)!.type === 'per_request' ? t('modelSquare.perRequest') : t('modelSquare.perImage') }}</span>
                 </div>
                 <div class="grid grid-cols-2 gap-1.5">
                   <div v-for="item in getModelPerUsagePricing(model)!.items" :key="item.label" class="flex items-center justify-between gap-1 rounded bg-amber-100/60 dark:bg-amber-900/20 px-2 py-1">
@@ -781,7 +781,7 @@ const groupMap = computed(() => {
 
 // Per-usage pricing info for a model
 interface PerUsagePricing {
-  type: 'sora' | 'image'
+  type: 'sora' | 'image' | 'per_request'
   items: { label: string; price: number }[]
 }
 
@@ -793,6 +793,29 @@ function getModelPerUsagePricing(model: ModelSquareItem): PerUsagePricing | null
   for (const gid of gids) {
     const g = groupMap.value[gid]
     if (!g) continue
+
+    // Per-request pricing (group-level fixed price per request)
+    if (g.per_request_price != null) {
+      const items: { label: string; price: number }[] = []
+      // Check model-specific price overrides
+      if (g.model_per_request_prices) {
+        // Exact match first
+        if (model.id in g.model_per_request_prices) {
+          items.push({ label: t('modelSquare.perRequest'), price: g.model_per_request_prices[model.id] })
+          return { type: 'per_request', items }
+        }
+        // Wildcard match
+        for (const [pattern, price] of Object.entries(g.model_per_request_prices)) {
+          if (pattern.endsWith('*') && model.id.startsWith(pattern.slice(0, -1))) {
+            items.push({ label: t('modelSquare.perRequest'), price })
+            return { type: 'per_request', items }
+          }
+        }
+      }
+      // Default per-request price
+      items.push({ label: t('modelSquare.perRequest'), price: g.per_request_price })
+      return { type: 'per_request', items }
+    }
 
     // Sora pricing
     const soraItems: { label: string; price: number }[] = []

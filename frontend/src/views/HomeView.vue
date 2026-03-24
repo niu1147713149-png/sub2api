@@ -391,6 +391,7 @@
             {{ t('home.docs') }}
           </a>
           <a
+            v-if="isAdmin"
             :href="githubUrl"
             target="_blank"
             rel="noopener noreferrer"

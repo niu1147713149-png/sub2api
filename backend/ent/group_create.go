@@ -452,6 +452,26 @@ func (_c *GroupCreate) SetNillableDefaultMappedModel(v *string) *GroupCreate {
 	return _c
 }
 
+// SetPerRequestPrice sets the "per_request_price" field.
+func (_c *GroupCreate) SetPerRequestPrice(v float64) *GroupCreate {
+	_c.mutation.SetPerRequestPrice(v)
+	return _c
+}
+
+// SetNillablePerRequestPrice sets the "per_request_price" field if the given value is not nil.
+func (_c *GroupCreate) SetNillablePerRequestPrice(v *float64) *GroupCreate {
+	if v != nil {
+		_c.SetPerRequestPrice(*v)
+	}
+	return _c
+}
+
+// SetModelPerRequestPrices sets the "model_per_request_prices" field.
+func (_c *GroupCreate) SetModelPerRequestPrices(v map[string]float64) *GroupCreate {
+	_c.mutation.SetModelPerRequestPrices(v)
+	return _c
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by IDs.
 func (_c *GroupCreate) AddAPIKeyIDs(ids ...int64) *GroupCreate {
 	_c.mutation.AddAPIKeyIDs(ids...)
@@ -884,6 +904,15 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.DefaultMappedModel(); ok {
 		_spec.SetField(group.FieldDefaultMappedModel, field.TypeString, value)
 		_node.DefaultMappedModel = value
+	}
+	if value, ok := _c.mutation.PerRequestPrice(); ok {
+		_spec.SetField(group.FieldPerRequestPrice, field.TypeFloat64, value)
+		_node.PerRequestPrice = new(float64)
+		*_node.PerRequestPrice = value
+	}
+	if value, ok := _c.mutation.ModelPerRequestPrices(); ok {
+		_spec.SetField(group.FieldModelPerRequestPrices, field.TypeJSON, value)
+		_node.ModelPerRequestPrices = value
 	}
 	if nodes := _c.mutation.APIKeysIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

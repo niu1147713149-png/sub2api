@@ -1402,6 +1402,7 @@ export default {
         userStatus: 'Status'
       },
       rateAndAccounts: '{rate}x rate · {count} accounts',
+      perRequestAndAccounts: 'Per-req ${price}/req · {rate}x rate · {count} accounts',
       accountsCount: '{count} accounts',
       form: {
         name: 'Name',
@@ -1478,6 +1479,20 @@ export default {
         videoHd: 'Video (Pro-HD) ($)',
         storageQuota: 'Storage Quota',
         storageQuotaHint: 'In GB, set the Sora storage quota for users in this group. 0 means use system default'
+      },
+      perRequestPricing: {
+        title: 'Per-Request Pricing',
+        description: 'When enabled, all requests in this group are charged a fixed price per request instead of token-based billing. Only applies to text requests; image/video generation uses existing pricing.',
+        enabled: 'Per-request pricing enabled',
+        disabled: 'Per-request pricing disabled (token-based)',
+        defaultPrice: 'Default Price Per Request ($)',
+        defaultPriceHint: 'Default charge per request (USD). Actual cost = price × rate multiplier',
+        modelPrices: 'Model-Specific Price Overrides',
+        modelPricesHint: 'Set different per-request prices for specific models. Supports wildcards (e.g., claude-opus-*)',
+        modelPattern: 'Model Pattern',
+        modelPatternPlaceholder: 'e.g., claude-opus-*',
+        modelPrice: 'Price Per Request ($)',
+        addRule: 'Add Rule'
       },
       claudeCode: {
         title: 'Claude Code Client Restriction',
@@ -4706,6 +4721,7 @@ export default {
     next: 'Next',
     noModels: 'No models found',
     perUsage: 'Per Usage',
+    perRequest: 'Per Request',
     perImage: 'Per Image',
     perVideo: 'Per Video',
     perVideoHd: 'Per Video (HD)',

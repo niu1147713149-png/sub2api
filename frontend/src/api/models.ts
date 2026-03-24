@@ -45,6 +45,9 @@ export interface ModelSquareGroup {
   sora_image_price_540: number | null
   sora_video_price_per_request: number | null
   sora_video_price_per_request_hd: number | null
+  // 分组按次收费
+  per_request_price: number | null
+  model_per_request_prices: Record<string, number> | null
 }
 
 export interface ModelSquareItem {

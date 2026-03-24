@@ -35,6 +35,7 @@ interface Props {
   subscriptionType?: SubscriptionType
   rateMultiplier?: number
   userRateMultiplier?: number | null // 用户专属倍率
+  perRequestPrice?: number | null // 按次计费价格
   showRate?: boolean
   daysRemaining?: number | null // 剩余天数（订阅类型时使用）
 }
@@ -43,7 +44,8 @@ const props = withDefaults(defineProps<Props>(), {
   subscriptionType: 'standard',
   showRate: true,
   daysRemaining: null,
-  userRateMultiplier: null
+  userRateMultiplier: null,
+  perRequestPrice: null
 })
 
 const { t } = useI18n()
@@ -60,9 +62,14 @@ const hasCustomRate = computed(() => {
   )
 })
 
+// 是否开启按次计费
+const isPerRequest = computed(() => props.perRequestPrice != null)
+
 // 是否显示右侧标签
 const showLabel = computed(() => {
   if (!props.showRate) return false
+  // 按次计费：始终显示
+  if (isPerRequest.value) return true
   // 订阅类型：显示天数或"订阅"
   if (isSubscription.value) return true
   // 标准类型：显示倍率（包括专属倍率）
@@ -71,6 +78,9 @@ const showLabel = computed(() => {
 
 // Label text
 const labelText = computed(() => {
+  if (isPerRequest.value) {
+    return `$${props.perRequestPrice}`
+  }
   if (isSubscription.value) {
     // 如果有剩余天数，显示天数
     if (props.daysRemaining !== null && props.daysRemaining !== undefined) {
@@ -88,6 +98,11 @@ const labelText = computed(() => {
 // Label style based on type and days remaining
 const labelClass = computed(() => {
   const base = 'px-1.5 py-0.5 rounded text-[10px] font-semibold'
+
+  if (isPerRequest.value) {
+    // 按次计费：amber 高亮
+    return `${base} bg-amber-200/80 text-amber-800 dark:bg-amber-800/50 dark:text-amber-300`
+  }
 
   if (!isSubscription.value) {
     // Standard: subtle background (不再为专属倍率使用不同的背景色)

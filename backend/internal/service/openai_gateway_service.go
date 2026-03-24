@@ -4138,13 +4138,25 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 	if result.BillingModel != "" {
 		billingModel = result.BillingModel
 	}
-	serviceTier := ""
-	if result.ServiceTier != nil {
-		serviceTier = strings.TrimSpace(*result.ServiceTier)
+
+	// 按次计费判断
+	var cost *CostBreakdown
+	if apiKey.Group != nil {
+		if perReqPrice, ok := apiKey.Group.GetPerRequestPrice(billingModel); ok {
+			cost = &CostBreakdown{TotalCost: perReqPrice, ActualCost: perReqPrice * multiplier}
+		}
 	}
-	cost, err := s.billingService.CalculateCostWithServiceTier(billingModel, tokens, multiplier, serviceTier)
-	if err != nil {
-		cost = &CostBreakdown{ActualCost: 0}
+
+	if cost == nil {
+		serviceTier := ""
+		if result.ServiceTier != nil {
+			serviceTier = strings.TrimSpace(*result.ServiceTier)
+		}
+		var err error
+		cost, err = s.billingService.CalculateCostWithServiceTier(billingModel, tokens, multiplier, serviceTier)
+		if err != nil {
+			cost = &CostBreakdown{ActualCost: 0}
+		}
 	}
 
 	// Determine billing type

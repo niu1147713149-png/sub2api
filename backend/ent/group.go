@@ -82,6 +82,10 @@ type Group struct {
 	AllowMessagesDispatch bool `json:"allow_messages_dispatch,omitempty"`
 	// 默认映射模型 ID，当账号级映射找不到时使用此值
 	DefaultMappedModel string `json:"default_mapped_model,omitempty"`
+	// 分组默认每次请求价格，非 nil 表示开启按次计费
+	PerRequestPrice *float64 `json:"per_request_price,omitempty"`
+	// 模型级按次价格覆盖，支持通配符
+	ModelPerRequestPrices map[string]float64 `json:"model_per_request_prices,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GroupQuery when eager-loading is set.
 	Edges        GroupEdges `json:"edges"`
@@ -188,11 +192,11 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case group.FieldModelRouting, group.FieldSupportedModelScopes:
+		case group.FieldModelRouting, group.FieldSupportedModelScopes, group.FieldModelPerRequestPrices:
 			values[i] = new([]byte)
 		case group.FieldIsExclusive, group.FieldClaudeCodeOnly, group.FieldModelRoutingEnabled, group.FieldMcpXMLInject, group.FieldAllowMessagesDispatch:
 			values[i] = new(sql.NullBool)
-		case group.FieldRateMultiplier, group.FieldDailyLimitUsd, group.FieldWeeklyLimitUsd, group.FieldMonthlyLimitUsd, group.FieldImagePrice1k, group.FieldImagePrice2k, group.FieldImagePrice4k, group.FieldSoraImagePrice360, group.FieldSoraImagePrice540, group.FieldSoraVideoPricePerRequest, group.FieldSoraVideoPricePerRequestHd:
+		case group.FieldRateMultiplier, group.FieldDailyLimitUsd, group.FieldWeeklyLimitUsd, group.FieldMonthlyLimitUsd, group.FieldImagePrice1k, group.FieldImagePrice2k, group.FieldImagePrice4k, group.FieldSoraImagePrice360, group.FieldSoraImagePrice540, group.FieldSoraVideoPricePerRequest, group.FieldSoraVideoPricePerRequestHd, group.FieldPerRequestPrice:
 			values[i] = new(sql.NullFloat64)
 		case group.FieldID, group.FieldDefaultValidityDays, group.FieldSoraStorageQuotaBytes, group.FieldFallbackGroupID, group.FieldFallbackGroupIDOnInvalidRequest, group.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
@@ -431,6 +435,21 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DefaultMappedModel = value.String
 			}
+		case group.FieldPerRequestPrice:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field per_request_price", values[i])
+			} else if value.Valid {
+				_m.PerRequestPrice = new(float64)
+				*_m.PerRequestPrice = value.Float64
+			}
+		case group.FieldModelPerRequestPrices:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field model_per_request_prices", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.ModelPerRequestPrices); err != nil {
+					return fmt.Errorf("unmarshal field model_per_request_prices: %w", err)
+				}
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -630,6 +649,14 @@ func (_m *Group) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("default_mapped_model=")
 	builder.WriteString(_m.DefaultMappedModel)
+	builder.WriteString(", ")
+	if v := _m.PerRequestPrice; v != nil {
+		builder.WriteString("per_request_price=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("model_per_request_prices=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ModelPerRequestPrices))
 	builder.WriteByte(')')
 	return builder.String()
 }

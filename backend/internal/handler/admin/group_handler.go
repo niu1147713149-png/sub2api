@@ -114,6 +114,9 @@ type CreateGroupRequest struct {
 	DefaultMappedModel    string `json:"default_mapped_model"`
 	// 从指定分组复制账号（创建后自动绑定）
 	CopyAccountsFromGroupIDs []int64 `json:"copy_accounts_from_group_ids"`
+	// 分组按次收费配置
+	PerRequestPrice       *float64           `json:"per_request_price"`
+	ModelPerRequestPrices map[string]float64  `json:"model_per_request_prices"`
 }
 
 // UpdateGroupRequest represents update group request
@@ -152,6 +155,9 @@ type UpdateGroupRequest struct {
 	DefaultMappedModel    *string `json:"default_mapped_model"`
 	// 从指定分组复制账号（同步操作：先清空当前分组的账号绑定，再绑定源分组的账号）
 	CopyAccountsFromGroupIDs []int64 `json:"copy_accounts_from_group_ids"`
+	// 分组按次收费配置
+	PerRequestPrice       *float64           `json:"per_request_price"`
+	ModelPerRequestPrices map[string]float64  `json:"model_per_request_prices"`
 }
 
 // List handles listing all groups with pagination
@@ -268,6 +274,8 @@ func (h *GroupHandler) Create(c *gin.Context) {
 		AllowMessagesDispatch:           req.AllowMessagesDispatch,
 		DefaultMappedModel:              req.DefaultMappedModel,
 		CopyAccountsFromGroupIDs:        req.CopyAccountsFromGroupIDs,
+		PerRequestPrice:                 req.PerRequestPrice,
+		ModelPerRequestPrices:           req.ModelPerRequestPrices,
 	})
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -321,6 +329,8 @@ func (h *GroupHandler) Update(c *gin.Context) {
 		AllowMessagesDispatch:           req.AllowMessagesDispatch,
 		DefaultMappedModel:              req.DefaultMappedModel,
 		CopyAccountsFromGroupIDs:        req.CopyAccountsFromGroupIDs,
+		PerRequestPrice:                 req.PerRequestPrice,
+		ModelPerRequestPrices:           req.ModelPerRequestPrices,
 	})
 	if err != nil {
 		response.ErrorFrom(c, err)

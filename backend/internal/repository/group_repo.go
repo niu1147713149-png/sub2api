@@ -61,7 +61,13 @@ func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) er
 		SetMcpXMLInject(groupIn.MCPXMLInject).
 		SetSoraStorageQuotaBytes(groupIn.SoraStorageQuotaBytes).
 		SetAllowMessagesDispatch(groupIn.AllowMessagesDispatch).
-		SetDefaultMappedModel(groupIn.DefaultMappedModel)
+		SetDefaultMappedModel(groupIn.DefaultMappedModel).
+		SetNillablePerRequestPrice(groupIn.PerRequestPrice)
+
+	// 设置模型按次价格覆盖
+	if groupIn.ModelPerRequestPrices != nil {
+		builder = builder.SetModelPerRequestPrices(groupIn.ModelPerRequestPrices)
+	}
 
 	// 设置模型路由配置
 	if groupIn.ModelRouting != nil {
@@ -187,6 +193,19 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 	// 处理 SupportedModelScopes：nil 表示不变，非 nil（含空数组）表示更新
 	if groupIn.SupportedModelScopes != nil {
 		builder = builder.SetSupportedModelScopes(groupIn.SupportedModelScopes)
+	}
+
+	// 处理 PerRequestPrice：nil 时清除，否则设置
+	if groupIn.PerRequestPrice != nil {
+		builder = builder.SetPerRequestPrice(*groupIn.PerRequestPrice)
+	} else {
+		builder = builder.ClearPerRequestPrice()
+	}
+	// 处理 ModelPerRequestPrices：nil 时清除，否则设置
+	if groupIn.ModelPerRequestPrices != nil {
+		builder = builder.SetModelPerRequestPrices(groupIn.ModelPerRequestPrices)
+	} else {
+		builder = builder.ClearModelPerRequestPrices()
 	}
 
 	updated, err := builder.Save(ctx)

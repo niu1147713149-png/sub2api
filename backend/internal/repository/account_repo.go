@@ -531,6 +531,16 @@ func (r *accountRepository) ListActive(ctx context.Context) ([]service.Account, 
 	return r.accountsToService(ctx, accounts)
 }
 
+func (r *accountRepository) ListErrorAccounts(ctx context.Context) ([]service.Account, error) {
+	accounts, err := r.client.Account.Query().
+		Where(dbaccount.StatusEQ(service.StatusError)).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.accountsToService(ctx, accounts)
+}
+
 func (r *accountRepository) ListByPlatform(ctx context.Context, platform string) ([]service.Account, error) {
 	accounts, err := r.client.Account.Query().
 		Where(
@@ -1311,23 +1321,62 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 		idx++
 	}
 	// JSONB 需要合并而非覆盖，使用 raw SQL 保持旧行为。
+	// 值为 nil 的 key 表示需要从 JSONB 中删除。
 	if len(updates.Credentials) > 0 {
-		payload, err := json.Marshal(updates.Credentials)
-		if err != nil {
-			return 0, err
+		mergeMap := make(map[string]any)
+		var removeKeys []string
+		for k, v := range updates.Credentials {
+			if v == nil {
+				removeKeys = append(removeKeys, k)
+			} else {
+				mergeMap[k] = v
+			}
 		}
-		setClauses = append(setClauses, "credentials = COALESCE(credentials, '{}'::jsonb) || $"+itoa(idx)+"::jsonb")
-		args = append(args, payload)
-		idx++
+
+		expr := "COALESCE(credentials, '{}'::jsonb)"
+		if len(mergeMap) > 0 {
+			payload, err := json.Marshal(mergeMap)
+			if err != nil {
+				return 0, err
+			}
+			expr += " || $" + itoa(idx) + "::jsonb"
+			args = append(args, payload)
+			idx++
+		}
+		for _, key := range removeKeys {
+			expr += " - $" + itoa(idx)
+			args = append(args, key)
+			idx++
+		}
+		setClauses = append(setClauses, "credentials = "+expr)
 	}
 	if len(updates.Extra) > 0 {
-		payload, err := json.Marshal(updates.Extra)
-		if err != nil {
-			return 0, err
+		mergeMap := make(map[string]any)
+		var removeKeys []string
+		for k, v := range updates.Extra {
+			if v == nil {
+				removeKeys = append(removeKeys, k)
+			} else {
+				mergeMap[k] = v
+			}
 		}
-		setClauses = append(setClauses, "extra = COALESCE(extra, '{}'::jsonb) || $"+itoa(idx)+"::jsonb")
-		args = append(args, payload)
-		idx++
+
+		expr := "COALESCE(extra, '{}'::jsonb)"
+		if len(mergeMap) > 0 {
+			payload, err := json.Marshal(mergeMap)
+			if err != nil {
+				return 0, err
+			}
+			expr += " || $" + itoa(idx) + "::jsonb"
+			args = append(args, payload)
+			idx++
+		}
+		for _, key := range removeKeys {
+			expr += " - $" + itoa(idx)
+			args = append(args, key)
+			idx++
+		}
+		setClauses = append(setClauses, "extra = "+expr)
 	}
 
 	if len(setClauses) == 0 {

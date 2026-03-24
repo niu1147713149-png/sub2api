@@ -493,8 +493,8 @@ let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const filters = reactive({
   status: '',
-  start_date: '',
-  end_date: ''
+  start_date: `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,"0")}-${String(new Date().getDate()).padStart(2,"0")}`,
+  end_date: `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,"0")}-${String(new Date().getDate()).padStart(2,"0")}`
 })
 
 const pagination = reactive({
