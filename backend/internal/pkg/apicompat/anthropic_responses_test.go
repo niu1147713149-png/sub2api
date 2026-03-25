@@ -634,8 +634,7 @@ func TestAnthropicToResponses_ThinkingEnabled(t *testing.T) {
 	// thinking.type is ignored for effort; default xhigh applies.
 	assert.Equal(t, "xhigh", resp.Reasoning.Effort)
 	assert.Equal(t, "auto", resp.Reasoning.Summary)
-	assert.Contains(t, resp.Include, "reasoning.encrypted_content")
-	assert.NotContains(t, resp.Include, "reasoning.summary")
+	assert.Empty(t, resp.Include)
 }
 
 func TestAnthropicToResponses_ThinkingAdaptive(t *testing.T) {

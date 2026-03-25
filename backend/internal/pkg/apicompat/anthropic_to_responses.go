@@ -27,7 +27,6 @@ func AnthropicToResponses(req *AnthropicRequest) (*ResponsesRequest, error) {
 		Temperature: req.Temperature,
 		TopP:        req.TopP,
 		Stream:      req.Stream,
-		Include:     []string{"reasoning.encrypted_content"},
 	}
 
 	storeFalse := false

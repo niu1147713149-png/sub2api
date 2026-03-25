@@ -1897,6 +1897,30 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 		}
 	}
 
+	// For non-OAuth accounts, remove "reasoning.encrypted_content" from the
+	// include array to prevent upstream from returning binary encrypted_content
+	// that causes "Cannot convert argument to a ByteString" errors downstream.
+	if account.Type != AccountTypeOAuth {
+		if includeRaw, ok := reqBody["include"].([]any); ok {
+			filtered := make([]any, 0, len(includeRaw))
+			for _, v := range includeRaw {
+				if s, ok := v.(string); ok && s == "reasoning.encrypted_content" {
+					continue
+				}
+				filtered = append(filtered, v)
+			}
+			if len(filtered) != len(includeRaw) {
+				if len(filtered) == 0 {
+					delete(reqBody, "include")
+				} else {
+					reqBody["include"] = filtered
+				}
+				bodyModified = true
+				disablePatch()
+			}
+		}
+	}
+
 	// 仅在 WSv2 模式保留 previous_response_id，其他模式（HTTP/WSv1）统一过滤。
 	// 注意：该规则同样适用于 Codex CLI 请求，避免 WSv1 向上游透传不支持字段。
 	if wsDecision.Transport != OpenAIUpstreamTransportResponsesWebsocketV2 {

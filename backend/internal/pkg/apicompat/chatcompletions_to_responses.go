@@ -8,8 +8,7 @@ import (
 
 // ChatCompletionsToResponses converts a Chat Completions request into a
 // Responses API request. The upstream always streams, so Stream is forced to
-// true. store is always false and reasoning.encrypted_content is always
-// included so that the response translator has full context.
+// true. store is always false.
 func ChatCompletionsToResponses(req *ChatCompletionsRequest) (*ResponsesRequest, error) {
 	input, err := convertChatMessagesToResponsesInput(req.Messages)
 	if err != nil {
@@ -27,7 +26,6 @@ func ChatCompletionsToResponses(req *ChatCompletionsRequest) (*ResponsesRequest,
 		Temperature: req.Temperature,
 		TopP:        req.TopP,
 		Stream:      true, // upstream always streams
-		Include:     []string{"reasoning.encrypted_content"},
 		ServiceTier: req.ServiceTier,
 	}
 
