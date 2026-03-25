@@ -2735,6 +2735,10 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 	for scanner.Scan() {
 		line := scanner.Text()
 		if data, ok := extractOpenAISSEDataLine(line); ok {
+			// Strip encrypted_content to avoid downstream ByteString errors.
+			if strings.Contains(data, "encrypted_content") {
+				data, line = stripEncryptedContentFromSSE(data)
+			}
 			dataBytes := []byte(data)
 			trimmedData := strings.TrimSpace(data)
 			if trimmedData == "[DONE]" {
@@ -3409,6 +3413,12 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 				line = s.replaceModelInSSELine(line, mappedModel, originalModel)
 			}
 
+			// Strip encrypted_content from SSE events to avoid downstream
+			// ByteString conversion errors (non-ASCII characters > 255).
+			if strings.Contains(data, "encrypted_content") {
+				data, line = stripEncryptedContentFromSSE(data)
+			}
+
 			dataBytes := []byte(data)
 
 			// Correct Codex tool calls if needed (apply_patch -> edit, etc.)
@@ -3604,6 +3614,81 @@ func (s *OpenAIGatewayService) replaceModelInSSELine(line, fromModel, toModel st
 	return line
 }
 
+// stripEncryptedContentFromSSE removes encrypted_content fields from an SSE
+// data payload. encrypted_content contains non-ASCII binary data that causes
+// "Cannot convert argument to a ByteString" errors in downstream proxies.
+// It returns the cleaned data string and the reconstructed SSE line.
+func stripEncryptedContentFromSSE(data string) (string, string) {
+	modified := false
+
+	// item.encrypted_content (response.output_item.added / done events)
+	if gjson.Get(data, "item.encrypted_content").Exists() {
+		if cleaned, err := sjson.Delete(data, "item.encrypted_content"); err == nil {
+			data = cleaned
+			modified = true
+		}
+	}
+
+	// response.output.#.encrypted_content (response.completed events)
+	if gjson.Get(data, "response.output").IsArray() {
+		gjson.Get(data, "response.output").ForEach(func(key, value gjson.Result) bool {
+			if value.Get("encrypted_content").Exists() {
+				path := fmt.Sprintf("response.output.%d.encrypted_content", key.Int())
+				if cleaned, err := sjson.Delete(data, path); err == nil {
+					data = cleaned
+					modified = true
+				}
+			}
+			return true
+		})
+	}
+
+	if !modified {
+		return data, "data: " + data
+	}
+	return data, "data: " + data
+}
+
+// stripEncryptedContentFromBytes removes all encrypted_content fields from a
+// JSON response body (non-streaming path).
+func stripEncryptedContentFromBytes(body []byte) []byte {
+	s := string(body)
+	modified := false
+
+	// Top-level output array: output.#.encrypted_content
+	if gjson.Get(s, "output").IsArray() {
+		gjson.Get(s, "output").ForEach(func(key, value gjson.Result) bool {
+			if value.Get("encrypted_content").Exists() {
+				path := fmt.Sprintf("output.%d.encrypted_content", key.Int())
+				if cleaned, err := sjson.Delete(s, path); err == nil {
+					s = cleaned
+					modified = true
+				}
+			}
+			return true
+		})
+	}
+
+	// Nested response.output.#.encrypted_content
+	if gjson.Get(s, "response.output").IsArray() {
+		gjson.Get(s, "response.output").ForEach(func(key, value gjson.Result) bool {
+			if value.Get("encrypted_content").Exists() {
+				path := fmt.Sprintf("response.output.%d.encrypted_content", key.Int())
+				if cleaned, err := sjson.Delete(s, path); err == nil {
+					s = cleaned
+					modified = true
+				}
+			}
+			return true
+		})
+	}
+
+	if modified {
+		return []byte(s)
+	}
+	return body
+}
+
 // correctToolCallsInResponseBody 修正响应体中的工具调用
 func (s *OpenAIGatewayService) correctToolCallsInResponseBody(body []byte) []byte {
 	if len(body) == 0 {
@@ -3692,6 +3777,12 @@ func (s *OpenAIGatewayService) handleNonStreamingResponse(ctx context.Context, r
 		body = s.replaceModelInResponseBody(body, mappedModel, originalModel)
 	}
 
+	// Strip encrypted_content from non-streaming response to avoid downstream
+	// ByteString conversion errors (non-ASCII characters > 255).
+	if bytes.Contains(body, []byte("encrypted_content")) {
+		body = stripEncryptedContentFromBytes(body)
+	}
+
 	responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
 
 	contentType := "application/json"
@@ -3740,6 +3831,11 @@ func (s *OpenAIGatewayService) handleOAuthSSEToJSON(resp *http.Response, c *gin.
 			bodyText = s.replaceModelInSSEBody(bodyText, mappedModel, originalModel)
 		}
 		body = []byte(bodyText)
+	}
+
+	// Strip encrypted_content to avoid downstream ByteString errors.
+	if bytes.Contains(body, []byte("encrypted_content")) {
+		body = stripEncryptedContentFromBytes(body)
 	}
 
 	responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
