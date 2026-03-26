@@ -680,12 +680,10 @@ func TestConstants_值正确(t *testing.T) {
 	if ClientID != "antigravity-client-id.apps.googleusercontent.com" {
 		t.Errorf("ClientID 不匹配: got %s", ClientID)
 	}
+	defaultClientSecret = ""
 	secret, err := getClientSecret()
-	if err != nil {
-		t.Fatalf("getClientSecret 应返回默认值，但报错: %v", err)
-	}
-	if secret != "" {
-		t.Errorf("默认 client_secret 不匹配: got %s", secret)
+	if err == nil {
+		t.Fatalf("getClientSecret 应在未配置环境变量时返回错误，got secret=%s", secret)
 	}
 	if RedirectURI != "http://localhost:8085/callback" {
 		t.Errorf("RedirectURI 不匹配: got %s", RedirectURI)
